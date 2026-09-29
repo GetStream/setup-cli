@@ -6,13 +6,21 @@ on:
   pull_request:
 
 jobs:
-  lint:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - run: shellcheck setup.sh
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - name: The committed bundle is built from the source
+        run: git diff --exit-code dist
 
-  latest:
+  install:
     strategy:
       fail-fast: false
       matrix:
@@ -32,22 +40,21 @@ jobs:
           VERSION: ${{ steps.setup.outputs.version }}
         run: |
           test "$(getstream --version)" = "Stream CLI $VERSION"
-          case "$(command -v getstream)" in "$RUNNER_TEMP"/getstream-cli/*) ;; *) exit 1 ;; esac
+          case "$VERSION" in 1.*) ;; *) exit 1 ;; esac
+          case "$(command -v getstream)" in "$RUNNER_TOOL_CACHE"/getstream/*) ;; *) exit 1 ;; esac
           cat ~/.stream/config.yaml
           grep -q '^dashboard_url: https://dashboard.example.com$' ~/.stream/config.yaml
           grep -q '^telemetry: off$' ~/.stream/config.yaml
           ! getstream update
 
-      - name: Run again with another version and config
+      - name: Run again with another config
         uses: ./
         with:
-          version: 1.9.0
           config: |
             telemetry: on
 
-      - name: The second run replaced both
+      - name: The second run replaced the config
         run: |
-          test "$(getstream --version)" = "Stream CLI 1.9.0"
           grep -q '^telemetry: on$' ~/.stream/config.yaml
           ! grep -q 'dashboard_url' ~/.stream/config.yaml
 

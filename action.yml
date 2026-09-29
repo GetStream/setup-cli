@@ -4,8 +4,8 @@ author: GetStream
 
 inputs:
   version:
-    description: "The version to install, using npm semver syntax: 1.9.1, ^1.9, or latest."
-    default: latest
+    description: "An exact version to install, such as 1.9.0. Empty installs the newest."
+    default: ""
   config:
     description: "Optional overrides for the CLI's global config."
     default: ""
@@ -13,20 +13,7 @@ inputs:
 outputs:
   version:
     description: The installed version.
-    value: ${{ steps.configure.outputs.version }}
 
 runs:
-  using: composite
-  steps:
-    - id: install
-      shell: bash
-      env:
-        INPUT_VERSION: ${{ inputs.version }}
-      run: bash "$GITHUB_ACTION_PATH/setup.sh" install
-
-    - id: configure
-      shell: bash
-      env:
-        INPUT_CONFIG: ${{ inputs.config }}
-        BINARY: ${{ steps.install.outputs.path }}
-      run: bash "$GITHUB_ACTION_PATH/setup.sh" configure
+  using: node24
+  main: dist/index.js
