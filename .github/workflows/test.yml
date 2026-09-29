@@ -1,0 +1,68 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: shellcheck setup.sh
+
+  latest:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - id: setup
+        uses: ./
+        with:
+          config: |
+            dashboard_url: https://dashboard.example.com
+
+      - name: The command is on PATH and the config is written
+        env:
+          VERSION: ${{ steps.setup.outputs.version }}
+        run: |
+          test "$(getstream --version)" = "Stream CLI $VERSION"
+          case "$(command -v getstream)" in "$RUNNER_TEMP"/getstream-cli/*) ;; *) exit 1 ;; esac
+          cat ~/.stream/config.yaml
+          grep -q '^dashboard_url: https://dashboard.example.com$' ~/.stream/config.yaml
+          grep -q '^telemetry: off$' ~/.stream/config.yaml
+          ! getstream update
+
+      - name: Run again with another version and config
+        uses: ./
+        with:
+          version: 1.9.0
+          config: |
+            telemetry: on
+
+      - name: The second run replaced both
+        run: |
+          test "$(getstream --version)" = "Stream CLI 1.9.0"
+          grep -q '^telemetry: on$' ~/.stream/config.yaml
+          ! grep -q 'dashboard_url' ~/.stream/config.yaml
+
+  pinned:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - id: setup
+        uses: ./
+        with:
+          version: 1.9.0
+
+      - env:
+          VERSION: ${{ steps.setup.outputs.version }}
+        run: |
+          test "$VERSION" = 1.9.0
+          test "$(getstream --version)" = "Stream CLI 1.9.0"
