@@ -6,12 +6,15 @@ as `getstream` on the runner.
 ## Usage
 
 ```yaml
-steps:
-  - uses: GetStream/setup-cli@v1
-  - run: getstream status
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
     env:
       STREAM_API_KEY: ${{ secrets.STREAM_API_KEY }}
       STREAM_API_SECRET: ${{ secrets.STREAM_API_SECRET }}
+    steps:
+      - uses: GetStream/setup-cli@v1
+      - run: getstream status
 ```
 
 Optionally, pin a version:
@@ -30,6 +33,15 @@ Optionally, override the CLI's global config:
     config: |
       dashboard_url: https://dashboard.getstream.io
 ```
+
+## Authentication
+
+The CLI authenticates with the app's API key and secret from `STREAM_API_KEY`
+and `STREAM_API_SECRET`. Do not use `getstream login` for authentication in CI.
+Put the credentials in repository secrets and pass them in `env`.
+
+Commands like `init` and `open`, and the `--app-id` flag, won't work. Run
+`getstream status` to check that your key and secret are accepted.
 
 ## Inputs
 
