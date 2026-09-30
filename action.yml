@@ -5,7 +5,7 @@ author: GetStream
 inputs:
   version:
     description:
-      "Exact version to install, such as 1.9.1. Omit to install the latest."
+      "Exact version to install, 1.9.1 or later. Omit to install the latest."
     default: ""
   config:
     description: "Override the CLI's global config (YAML string)."

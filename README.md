@@ -47,7 +47,7 @@ Commands like `init` and `open`, and the `--app-id` flag, won't work. Run
 
 | Input     | What it does                                                         |
 | --------- | -------------------------------------------------------------------- |
-| `version` | Exact version to install, such as 1.9.1. Omit to install the latest. |
+| `version` | Exact version to install, 1.9.1 or later. Omit to install the latest.  |
 | `config`  | Override the CLI's global config (YAML string).                      |
 
 ## Outputs
@@ -63,6 +63,7 @@ this action will keep installing the latest CLI 1.x release. In other words,
 your workflow will not break on a breaking CLI release.
 
 For a stronger compatibility guarantee, pin `version` to an exact release.
+Releases before 1.9.1 cannot be pinned.
 
 ## Platforms
 
