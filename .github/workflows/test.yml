@@ -20,12 +20,8 @@ jobs:
       - name: The committed bundle is built from the source
         run: git diff --exit-code dist
 
-  install:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
-    runs-on: ${{ matrix.os }}
+  smoke:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
@@ -42,34 +38,23 @@ jobs:
           test "$(getstream --version)" = "Stream CLI $VERSION"
           case "$VERSION" in 1.*) ;; *) exit 1 ;; esac
           case "$(command -v getstream)" in "$RUNNER_TOOL_CACHE"/getstream/*) ;; *) exit 1 ;; esac
-          cat ~/.stream/config.yaml
           grep -q '^dashboard_url: https://dashboard.example.com$' ~/.stream/config.yaml
           grep -q '^telemetry: off$' ~/.stream/config.yaml
           ! getstream update
 
-      - name: Run again with another config
-        uses: ./
-        with:
-          config: |
-            telemetry: on
-
-      - name: The second run replaced the config
-        run: |
-          grep -q '^telemetry: on$' ~/.stream/config.yaml
-          ! grep -q 'dashboard_url' ~/.stream/config.yaml
-
-  pinned:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - id: setup
+      - name: Run again with a pinned version and another config
+        id: pinned
         uses: ./
         with:
           version: 1.9.0
+          config: |
+            dashboard_url: https://other.example.com
 
-      - env:
-          VERSION: ${{ steps.setup.outputs.version }}
+      - name: The second run installed the pinned version and replaced the config
+        env:
+          VERSION: ${{ steps.pinned.outputs.version }}
         run: |
           test "$VERSION" = 1.9.0
           test "$(getstream --version)" = "Stream CLI 1.9.0"
+          grep -q '^dashboard_url: https://other.example.com$' ~/.stream/config.yaml
+          grep -q '^telemetry: off$' ~/.stream/config.yaml

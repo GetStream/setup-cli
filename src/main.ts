@@ -27,7 +27,7 @@ async function run(): Promise<void> {
 
   if (wanted && installed !== wanted) {
     throw new Error(
-      `Installed Stream CLI reported unexpected version ${installed}, expected ${wanted}`,
+      `Installed Stream CLI reports version ${installed}, expected ${wanted}`,
     );
   }
 

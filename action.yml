@@ -4,15 +4,16 @@ author: GetStream
 
 inputs:
   version:
-    description: "An exact version to install, such as 1.9.0. Empty installs the newest."
+    description:
+      "Exact version to install, such as 1.9.0. Omit to install the latest."
     default: ""
   config:
-    description: "Optional overrides for the CLI's global config."
+    description: "Override the CLI's global config (YAML string)."
     default: ""
 
 outputs:
   version:
-    description: The installed version.
+    description: The installed version, such as 1.9.0.
 
 runs:
   using: node24

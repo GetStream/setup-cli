@@ -23419,16 +23419,16 @@ async function installCli(manifest) {
     );
   }
   await chmod2(file, 493);
-  return await cacheFile(file, TOOL, TOOL, manifest.version);
+  return cacheFile(file, TOOL, TOOL, manifest.version);
 }
 async function writeCliConfig(input) {
   const dir = join4(homedir(), ".stream");
   await mkdir2(dir, { recursive: true });
   await writeFile2(join4(dir, "config.yaml"), renderConfig(input));
 }
-async function getCliVersion(handle) {
+async function getCliVersion(dir) {
   const { stdout } = await getExecOutput(
-    join4(handle, TOOL),
+    join4(dir, TOOL),
     ["--version"],
     { silent: true }
   );
@@ -23454,17 +23454,17 @@ function platformKey(platform2 = process.platform, arch3 = process.arch) {
   }
   return `${os7}_${cpu}`;
 }
-function platformKeys() {
-  return Object.values(OS).flatMap(
-    (os7) => Object.values(CPU).map((cpu) => `${os7}_${cpu}`)
-  );
-}
 function parseVersion(output) {
   const version = output.trim().split(/\s+/).pop() ?? "";
   if (!/^\d+(\.\d+)+/.test(version)) {
     throw new Error(`Unexpected version output: ${output.trim()}`);
   }
   return version;
+}
+function platformKeys() {
+  return Object.values(OS).flatMap(
+    (os7) => Object.values(CPU).map((cpu) => `${os7}_${cpu}`)
+  );
 }
 
 // node_modules/valibot/dist/index.mjs
@@ -23777,7 +23777,10 @@ var ManifestSchema = object({
   binaries: record(
     string(),
     object({
-      url: pipe(string(), nonEmpty("Invalid url: expected a non-empty string")),
+      url: pipe(
+        string(),
+        nonEmpty("Invalid url: expected a non-empty string")
+      ),
       sha256: pipe(
         string(),
         regex(/^[0-9a-fA-F]{64}$/, "Invalid sha256: expected 64 hex digits")
@@ -23788,12 +23791,29 @@ var ManifestSchema = object({
 async function fetchManifest(ref) {
   const url = manifestUrl(ref);
   const manifest = await fetchFrom(url);
-  if (manifest.version !== ref && !manifest.version.startsWith(`${ref}.`)) {
+  if (!isManifestFor(manifest, ref)) {
     throw new Error(
       `The manifest at ${url} describes Stream CLI ${manifest.version}, not ${ref}`
     );
   }
   return manifest;
+}
+function isManifestFor(manifest, ref) {
+  return manifest.version === ref || manifest.version.startsWith(`${ref}.`);
+}
+function parseManifest(value, url) {
+  const result = safeParse(ManifestSchema, value);
+  if (result.success) {
+    return result.output;
+  }
+  const issues = result.issues.map(
+    (issue2) => `  ${getDotPath(issue2) ?? "manifest"}: ${issue2.message}`
+  );
+  throw new Error(`The manifest at ${url} is malformed:
+${issues.join("\n")}`);
+}
+function manifestUrl(ref) {
+  return `${MANIFESTS_BASE}/v${ref}.json`;
 }
 async function fetchFrom(url) {
   const client = new HttpClient("setup-cli", [], {
@@ -23819,20 +23839,6 @@ async function fetchFrom(url) {
   }
   return { ...parseManifest(response.result, url), source: url };
 }
-function parseManifest(value, url) {
-  const result = safeParse(ManifestSchema, value);
-  if (result.success) {
-    return result.output;
-  }
-  const issues = result.issues.map(
-    (issue2) => `  ${getDotPath(issue2) ?? "manifest"}: ${issue2.message}`
-  );
-  throw new Error(`The manifest at ${url} is malformed:
-${issues.join("\n")}`);
-}
-function manifestUrl(ref) {
-  return `${MANIFESTS_BASE}/v${ref}.json`;
-}
 
 // src/main.ts
 var MAJOR = "1";
@@ -23856,7 +23862,7 @@ async function run() {
   }
   if (wanted && installed !== wanted) {
     throw new Error(
-      `Installed Stream CLI reported unexpected version ${installed}, expected ${wanted}`
+      `Installed Stream CLI reports version ${installed}, expected ${wanted}`
     );
   }
   setOutput("version", installed);

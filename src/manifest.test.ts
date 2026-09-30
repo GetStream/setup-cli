@@ -1,10 +1,24 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { manifestUrl, parseManifest } from "./manifest.ts";
+import { isManifestFor, manifestUrl, parseManifest } from "./manifest.ts";
+import type { Manifest } from "./manifest.ts";
 
 test("manifestUrl names a major's manifest or an exact version's", () => {
   assert.equal(manifestUrl("1"), "https://getstream.io/cli/v1.json");
   assert.equal(manifestUrl("1.9.0"), "https://getstream.io/cli/v1.9.0.json");
+});
+
+test("isManifestFor matches a manifest to the name it was fetched under", () => {
+  const manifest = (version: string): Manifest => ({
+    version,
+    binaries: {},
+    source: `https://getstream.io/cli/v${version}.json`,
+  });
+  assert.equal(isManifestFor(manifest("1.9.1"), "1"), true);
+  assert.equal(isManifestFor(manifest("1.9.0"), "1.9.0"), true);
+  assert.equal(isManifestFor(manifest("2.0.0"), "1"), false);
+  assert.equal(isManifestFor(manifest("11.0.0"), "1"), false);
+  assert.equal(isManifestFor(manifest("1.9.1"), "1.9.0"), false);
 });
 
 test("parseManifest accepts a manifest and lists every wrong field", () => {

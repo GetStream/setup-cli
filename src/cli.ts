@@ -7,8 +7,6 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Manifest } from "./manifest.ts";
 
-export type CliHandle = string & { readonly __brand: "CliHandle" };
-
 const TOOL = "getstream";
 
 const OS: Record<string, string | undefined> = {
@@ -21,11 +19,11 @@ const CPU: Record<string, string | undefined> = {
   arm64: "arm64",
 };
 
-export async function installCli(manifest: Manifest): Promise<CliHandle> {
+export async function installCli(manifest: Manifest): Promise<string> {
   const cached = tc.find(TOOL, manifest.version);
   if (cached) {
     core.info(`Stream CLI ${manifest.version} is in the tool cache`);
-    return cached as CliHandle;
+    return cached;
   }
 
   const key = platformKey();
@@ -50,7 +48,7 @@ export async function installCli(manifest: Manifest): Promise<CliHandle> {
   }
 
   await chmod(file, 0o755);
-  return (await tc.cacheFile(file, TOOL, TOOL, manifest.version)) as CliHandle;
+  return tc.cacheFile(file, TOOL, TOOL, manifest.version);
 }
 
 export async function writeCliConfig(input: string): Promise<void> {
@@ -59,9 +57,9 @@ export async function writeCliConfig(input: string): Promise<void> {
   await writeFile(join(dir, "config.yaml"), renderConfig(input));
 }
 
-export async function getCliVersion(handle: CliHandle): Promise<string> {
+export async function getCliVersion(dir: string): Promise<string> {
   const { stdout } = await exec.getExecOutput(
-    join(handle, TOOL),
+    join(dir, TOOL),
     ["--version"],
     { silent: true },
   );
@@ -95,16 +93,16 @@ export function platformKey(
   return `${os}_${cpu}`;
 }
 
-function platformKeys(): string[] {
-  return Object.values(OS).flatMap((os) =>
-    Object.values(CPU).map((cpu) => `${os}_${cpu}`),
-  );
-}
-
 export function parseVersion(output: string): string {
   const version = output.trim().split(/\s+/).pop() ?? "";
   if (!/^\d+(\.\d+)+/.test(version)) {
     throw new Error(`Unexpected version output: ${output.trim()}`);
   }
   return version;
+}
+
+function platformKeys(): string[] {
+  return Object.values(OS).flatMap((os) =>
+    Object.values(CPU).map((cpu) => `${os}_${cpu}`),
+  );
 }

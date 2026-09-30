@@ -11,7 +11,10 @@ const ManifestSchema = v.object({
   binaries: v.record(
     v.string(),
     v.object({
-      url: v.pipe(v.string(), v.nonEmpty("Invalid url: expected a non-empty string")),
+      url: v.pipe(
+        v.string(),
+        v.nonEmpty("Invalid url: expected a non-empty string"),
+      ),
       sha256: v.pipe(
         v.string(),
         v.regex(/^[0-9a-fA-F]{64}$/, "Invalid sha256: expected 64 hex digits"),
@@ -30,13 +33,36 @@ export async function fetchManifest(ref: string): Promise<Manifest> {
   const url = manifestUrl(ref);
   const manifest = await fetchFrom(url);
 
-  if (manifest.version !== ref && !manifest.version.startsWith(`${ref}.`)) {
+  if (!isManifestFor(manifest, ref)) {
     throw new Error(
       `The manifest at ${url} describes Stream CLI ${manifest.version}, not ${ref}`,
     );
   }
 
   return manifest;
+}
+
+export function isManifestFor(manifest: Manifest, ref: string): boolean {
+  return manifest.version === ref || manifest.version.startsWith(`${ref}.`);
+}
+
+export function parseManifest(
+  value: unknown,
+  url: string,
+): v.InferOutput<typeof ManifestSchema> {
+  const result = v.safeParse(ManifestSchema, value);
+  if (result.success) {
+    return result.output;
+  }
+
+  const issues = result.issues.map(
+    (issue) => `  ${v.getDotPath(issue) ?? "manifest"}: ${issue.message}`,
+  );
+  throw new Error(`The manifest at ${url} is malformed:\n${issues.join("\n")}`);
+}
+
+export function manifestUrl(ref: string): string {
+  return `${MANIFESTS_BASE}/v${ref}.json`;
 }
 
 async function fetchFrom(url: string): Promise<Manifest> {
@@ -67,23 +93,4 @@ async function fetchFrom(url: string): Promise<Manifest> {
   }
 
   return { ...parseManifest(response.result, url), source: url };
-}
-
-export function parseManifest(
-  value: unknown,
-  url: string,
-): v.InferOutput<typeof ManifestSchema> {
-  const result = v.safeParse(ManifestSchema, value);
-  if (result.success) {
-    return result.output;
-  }
-
-  const issues = result.issues.map(
-    (issue) => `  ${v.getDotPath(issue) ?? "manifest"}: ${issue.message}`,
-  );
-  throw new Error(`The manifest at ${url} is malformed:\n${issues.join("\n")}`);
-}
-
-export function manifestUrl(ref: string): string {
-  return `${MANIFESTS_BASE}/v${ref}.json`;
 }
