@@ -23872,7 +23872,7 @@ function parseVersionInput(input) {
   const version = input.trim().replace(/^v/, "");
   if (version && !/^\d+\.\d+\.\d+$/.test(version)) {
     throw new Error(
-      `The version input must be an exact release such as 1.9.0, or empty for the newest; got ${input.trim()}`
+      `The version input must be an exact release such as 1.9.1, or empty for the newest; got ${input.trim()}`
     );
   }
   return version;

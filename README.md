@@ -47,14 +47,14 @@ Commands like `init` and `open`, and the `--app-id` flag, won't work. Run
 
 | Input     | What it does                                                         |
 | --------- | -------------------------------------------------------------------- |
-| `version` | Exact version to install, such as 1.9.0. Omit to install the latest. |
+| `version` | Exact version to install, such as 1.9.1. Omit to install the latest. |
 | `config`  | Override the CLI's global config (YAML string).                      |
 
 ## Outputs
 
 | Output    | What it is                            |
 | --------- | ------------------------------------- |
-| `version` | The installed version, such as 1.9.0. |
+| `version` | The installed version, such as 1.9.1. |
 
 ## Versions
 

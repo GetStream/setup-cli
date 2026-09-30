@@ -46,7 +46,7 @@ jobs:
         id: pinned
         uses: ./
         with:
-          version: 1.9.0
+          version: 1.9.1
           config: |
             dashboard_url: https://other.example.com
 
@@ -54,7 +54,7 @@ jobs:
         env:
           VERSION: ${{ steps.pinned.outputs.version }}
         run: |
-          test "$VERSION" = 1.9.0
-          test "$(getstream --version)" = "Stream CLI 1.9.0"
+          test "$VERSION" = 1.9.1
+          test "$(getstream --version)" = "Stream CLI 1.9.1"
           grep -q '^dashboard_url: https://other.example.com$' ~/.stream/config.yaml
           grep -q '^telemetry: off$' ~/.stream/config.yaml
